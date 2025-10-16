@@ -4,6 +4,8 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class Bloque extends Model
 {
@@ -15,16 +17,23 @@ class Bloque extends Model
         'nombre',
         'proyecto_id',
         'descripcion',
-        'estado'
+        'estado',
     ];
 
-    public function proyecto()
+    /** Relaciones */
+    public function proyecto(): BelongsTo
     {
         return $this->belongsTo(Proyecto::class);
     }
 
-    public function piezas()
+    public function piezas(): HasMany
     {
         return $this->hasMany(Pieza::class);
+    }
+
+    /** Scopes */
+    public function scopeActivos($query)
+    {
+        return $query->where('estado', 'activo');
     }
 }

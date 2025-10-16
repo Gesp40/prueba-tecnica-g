@@ -1,49 +1,49 @@
 <?php
 
-use App\Http\Controllers\ProfileController;
-use App\Http\Controllers\ProyectoController;
-use App\Http\Controllers\BloqueController;
-use App\Http\Controllers\PiezaController;
-use App\Http\Controllers\RegistroController;
-use Illuminate\Foundation\Application;
 use Illuminate\Support\Facades\Route;
-use Inertia\Inertia;
-
-/*
-|--------------------------------------------------------------------------
-| Web Routes
-|--------------------------------------------------------------------------
-|
-| Here is where you can register web routes for your application. These
-| routes are loaded by the RouteServiceProvider within a group which
-| contains the "web" middleware group. Now create something great!
-|
-*/
+use App\Http\Controllers\RegistroController;
+use App\Http\Controllers\SelectsController;
+use App\Http\Controllers\ReportesController;
 
 Route::get('/', function () {
-    return Inertia::render('Welcome', [
-        'canLogin' => Route::has('login'),
-        'canRegister' => Route::has('register'),
-        'laravelVersion' => Application::VERSION,
-        'phpVersion' => PHP_VERSION,
-    ]);
+    return auth()->check()
+        ? redirect()->route('registros.create')
+        : redirect()->route('login');
+})->name('root');
+
+// Rutas de autenticación
+if (file_exists(base_path('routes/auth.php'))) {
+    require __DIR__ . '/auth.php';
+}
+
+// (Opcional) Mantener dashboard de Breeze (requiere email verificado):
+Route::get('/dashboard', function () {
+    return Inertia\Inertia::render('Dashboard');
+})->middleware(['auth', 'verified'])->name('dashboard');
+
+// Rutas protegidas de la app (solo auth; sin verificación de email para la prueba)
+Route::middleware(['auth'])->group(function () {
+
+    // Formulario principal
+    Route::get('/registros/crear', [RegistroController::class, 'create'])->name('registros.create');
+    Route::post('/registros', [RegistroController::class, 'store'])->name('registros.store');
+    Route::get('/registros', [RegistroController::class, 'index'])->name('registros.index');
+    Route::get('/registros/{registro}/editar', [RegistroController::class, 'edit'])->name('registros.edit');
+    Route::put('/registros/{registro}', [RegistroController::class, 'update'])->name('registros.update');
+    Route::delete('/registros/{registro}', [RegistroController::class, 'destroy'])->name('registros.destroy');
+
+    // Endpoints para selects anidados (JSON)
+    Route::prefix('api')->group(function () {
+        Route::get('/proyectos', [SelectsController::class, 'proyectos'])->name('api.proyectos');
+        Route::get('/proyectos/{proyecto}/bloques', [SelectsController::class, 'bloques'])->name('api.proyectos.bloques');
+        Route::get('/bloques/{bloque}/piezas', [SelectsController::class, 'piezas'])->name('api.bloques.piezas');
+
+        // Reportes (JSON)
+        Route::get('/reportes/pendientes', [ReportesController::class, 'apiPendientesPorProyecto'])->name('api.reportes.pendientes');
+        Route::get('/reportes/estadisticas', [ReportesController::class, 'apiEstadisticas'])->name('api.reportes.estadisticas');
+    });
+
+    // Vistas Inertia de reportes
+    Route::get('/reportes/pendientes', [ReportesController::class, 'pendientes'])->name('reportes.pendientes');
+    Route::get('/reportes/estadisticas', [ReportesController::class, 'estadisticas'])->name('reportes.estadisticas');
 });
-
-Route::middleware(['auth', 'verified'])->group(function () {
-    Route::get('/dashboard', function () {
-        return Inertia::render('Dashboard');
-    })->name('dashboard');
-
-    Route::resource('proyectos', ProyectoController::class);
-    Route::resource('bloques', BloqueController::class);
-    Route::resource('piezas', PiezaController::class);
-    Route::resource('registros', RegistroController::class);
-});
-
-Route::middleware('auth')->group(function () {
-    Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
-    Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
-    Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
-});
-
-require __DIR__.'/auth.php';

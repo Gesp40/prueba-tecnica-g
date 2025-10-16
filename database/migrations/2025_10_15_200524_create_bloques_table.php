@@ -6,24 +6,21 @@ use Illuminate\Support\Facades\Schema;
 
 return new class extends Migration
 {
-    /**
-     * Run the migrations.
-     */
     public function up(): void
     {
         Schema::create('bloques', function (Blueprint $table) {
             $table->id();
             $table->string('nombre');
-            $table->foreignId('proyecto_id')->constrained('proyectos')->onDelete('cascade');
+            $table->foreignId('proyecto_id')->constrained('proyectos')->cascadeOnDelete();
             $table->string('descripcion')->nullable();
-            $table->enum('estado', ['activo', 'inactivo'])->default('activo');
+            $table->string('estado')->default('activo');
             $table->timestamps();
+
+            // Evita duplicado de nombre de bloque dentro de un mismo proyecto
+            $table->unique(['proyecto_id', 'nombre']);
         });
     }
 
-    /**
-     * Reverse the migrations.
-     */
     public function down(): void
     {
         Schema::dropIfExists('bloques');
