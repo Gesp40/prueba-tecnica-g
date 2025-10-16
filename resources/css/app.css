@@ -1,3 +1,16 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+/* Estilos personalizados */
+.btn-primary {
+    @apply bg-[#093972] text-white px-4 py-2 rounded-lg hover:bg-[#093972]/90 transition-colors;
+}
+
+.card {
+    @apply bg-white rounded-lg shadow p-6;
+}
+
+.table-header {
+    @apply bg-[#093972] text-white;
+}

@@ -90,81 +90,174 @@ const submit = () => {
 <template>
   <Head title="Registrar pieza" />
   <div class="min-h-screen bg-gray-50 py-8">
-    <div class="max-w-3xl mx-auto bg-white shadow rounded-lg p-6">
-      <div class="flex items-center justify-between mb-4">
-        <h1 class="text-2xl font-semibold">Registro de fabricación</h1>
-        /registrosVer registros</a>
+    <div class="max-w-3xl mx-auto bg-white shadow-sm rounded-lg p-6">
+      <div class="flex items-center justify-between mb-6">
+        <h1 class="text-2xl font-semibold text-gray-900">Registro de fabricación</h1>
+        <a href="/registros" 
+           class="text-sm text-indigo-600 hover:text-indigo-700 font-medium">
+          Ver registros
+        </a>
       </div>
 
-      <div v-if="flashSuccess" class="mb-4 rounded bg-emerald-50 text-emerald-800 px-4 py-2">
+      <!-- Flash message -->
+      <div v-if="flashSuccess" 
+           class="mb-6 rounded-md border border-emerald-200 bg-emerald-50 px-4 py-3 text-emerald-700">
         {{ flashSuccess }}
       </div>
 
       <form @submit.prevent="submit" class="space-y-6">
         <!-- Proyecto -->
         <div>
-          <label class="block text-sm font-medium text-gray-700 mb-1">Proyecto</label>
-          <select v-model="form.proyecto_id"
-                  class="mt-1 block w-full rounded-md border-gray-300 focus:border-indigo-500 focus:ring-indigo-500">
-            <option :value="null" disabled>Selecciona...</option>
-            <option v-for="p in proyectos" :key="p.id" :value="p.id">{{ p.nombre }}</option>
+          <label for="proyecto_id" class="block text-sm font-medium text-gray-700 mb-1">
+            Proyecto <span class="text-red-500">*</span>
+          </label>
+          <select id="proyecto_id"
+                  v-model="form.proyecto_id"
+                  :disabled="form.processing"
+                  class="mt-1 block w-full rounded-md border-gray-300 shadow-sm 
+                         focus:border-indigo-500 focus:ring-indigo-500 
+                         disabled:opacity-50 disabled:bg-gray-50">
+            <option value="">Selecciona proyecto...</option>
+            <option v-for="p in proyectos" 
+                    :key="p.id" 
+                    :value="p.id">
+              {{ p.nombre }}
+            </option>
           </select>
-          <p v-if="form.errors.proyecto_id" class="text-sm text-red-600 mt-1">{{ form.errors.proyecto_id }}</p>
+          <p v-if="form.errors.proyecto_id" 
+             class="mt-1 text-sm text-red-600">
+            {{ form.errors.proyecto_id }}
+          </p>
         </div>
 
         <!-- Bloque -->
         <div>
-          <label class="block text-sm font-medium text-gray-700 mb-1">Bloque</label>
-          <select v-model="form.bloque_id"
-                  :disabled="!form.proyecto_id"
-                  class="mt-1 block w-full rounded-md border-gray-300 focus:border-indigo-500 focus:ring-indigo-500 disabled:bg-gray-100">
-            <option :value="null" disabled>Selecciona...</option>
-            <option v-for="b in bloques" :key="b.id" :value="b.id">{{ b.nombre }}</option>
+          <label for="bloque_id" class="block text-sm font-medium text-gray-700 mb-1">
+            Bloque <span class="text-red-500">*</span>
+          </label>
+          <select id="bloque_id"
+                  v-model="form.bloque_id"
+                  :disabled="!form.proyecto_id || form.processing"
+                  class="mt-1 block w-full rounded-md border-gray-300 shadow-sm 
+                         focus:border-indigo-500 focus:ring-indigo-500 
+                         disabled:opacity-50 disabled:bg-gray-50">
+            <option value="">Selecciona bloque...</option>
+            <option v-for="b in bloques" 
+                    :key="b.id" 
+                    :value="b.id">
+              {{ b.nombre }}
+            </option>
           </select>
-          <p v-if="form.errors.bloque_id" class="text-sm text-red-600 mt-1">{{ form.errors.bloque_id }}</p>
+          <p v-if="form.errors.bloque_id" 
+             class="mt-1 text-sm text-red-600">
+            {{ form.errors.bloque_id }}
+          </p>
         </div>
 
         <!-- Pieza -->
         <div>
-          <label class="block text-sm font-medium text-gray-700 mb-1">Pieza (solo pendientes)</label>
-          <select v-model="form.pieza_id"
-                  :disabled="!form.bloque_id"
-                  class="mt-1 block w-full rounded-md border-gray-300 focus:border-indigo-500 focus:ring-indigo-500 disabled:bg-gray-100">
-            <option :value="null" disabled>Selecciona...</option>
-            <option v-for="pz in piezas" :key="pz.id" :value="pz.id">
+          <label for="pieza_id" class="block text-sm font-medium text-gray-700 mb-1">
+            Pieza pendiente <span class="text-red-500">*</span>
+          </label>
+          <select id="pieza_id"
+                  v-model="form.pieza_id"
+                  :disabled="!form.bloque_id || form.processing"
+                  class="mt-1 block w-full rounded-md border-gray-300 shadow-sm 
+                         focus:border-indigo-500 focus:ring-indigo-500 
+                         disabled:opacity-50 disabled:bg-gray-50">
+            <option value="">Selecciona pieza...</option>
+            <option v-for="pz in piezas" 
+                    :key="pz.id" 
+                    :value="pz.id">
               {{ pz.codigo }} — {{ pz.nombre ?? 'Sin nombre' }}
             </option>
           </select>
-          <p v-if="form.errors.pieza_id" class="text-sm text-red-600 mt-1">{{ form.errors.pieza_id }}</p>
+          <p v-if="form.errors.pieza_id" 
+             class="mt-1 text-sm text-red-600">
+            {{ form.errors.pieza_id }}
+          </p>
         </div>
 
-        <!-- Pesos -->
-        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <!-- Grid de pesos -->
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+          <!-- Peso teórico -->
           <div>
-            <label class="block text-sm font-medium text-gray-700 mb-1">Peso teórico (kg)</label>
-            <input type="text" :value="pesoTeorico.toFixed(3)" disabled
-                   class="mt-1 block w-full rounded-md border-gray-300 bg-gray-100" />
+            <label for="peso_teorico" 
+                   class="block text-sm font-medium text-gray-700 mb-1">
+              Peso teórico (kg)
+            </label>
+            <input id="peso_teorico"
+                   type="text" 
+                   :value="pesoTeorico.toFixed(3)" 
+                   readonly
+                   class="mt-1 block w-full rounded-md border-gray-300 bg-gray-50 
+                          text-gray-500 shadow-sm" />
           </div>
 
+          <!-- Peso real -->
           <div>
-            <label class="block text-sm font-medium text-gray-700 mb-1">Peso real (kg)</label>
-            <input type="number" step="0.001" min="0" v-model="form.peso_real"
-                   class="mt-1 block w-full rounded-md border-gray-300 focus:border-indigo-500 focus:ring-indigo-500" />
-            <p v-if="form.errors.peso_real" class="text-sm text-red-600 mt-1">{{ form.errors.peso_real }}</p>
+            <label for="peso_real" 
+                   class="block text-sm font-medium text-gray-700 mb-1">
+              Peso real (kg) <span class="text-red-500">*</span>
+            </label>
+            <input id="peso_real"
+                   type="number" 
+                   step="0.001" 
+                   min="0"
+                   v-model="form.peso_real"
+                   :disabled="!form.pieza_id || form.processing"
+                   class="mt-1 block w-full rounded-md border-gray-300 shadow-sm 
+                          focus:border-indigo-500 focus:ring-indigo-500 
+                          disabled:opacity-50 disabled:bg-gray-50" />
+            <p v-if="form.errors.peso_real" 
+               class="mt-1 text-sm text-red-600">
+              {{ form.errors.peso_real }}
+            </p>
           </div>
 
+          <!-- Diferencia -->
           <div>
-            <label class="block text-sm font-medium text-gray-700 mb-1">Diferencia (kg)</label>
-            <input type="text" :value="diferencia" disabled
-                   class="mt-1 block w-full rounded-md border-gray-300 bg-gray-100" />
+            <label for="diferencia" 
+                   class="block text-sm font-medium text-gray-700 mb-1">
+              Diferencia (kg)
+            </label>
+            <input id="diferencia"
+                   type="text" 
+                   :value="diferencia" 
+                   readonly
+                   :class="[
+                     'mt-1 block w-full rounded-md border-gray-300 bg-gray-50 shadow-sm font-medium',
+                     Number(diferencia) === 0 ? 'text-emerald-600' : 
+                     Number(diferencia) > 0 ? 'text-amber-600' : 'text-red-600'
+                   ]" />
           </div>
         </div>
 
-        <div class="pt-2">
+        <!-- Submit -->
+        <div class="pt-4">
           <button type="submit"
                   :disabled="form.processing || !form.pieza_id || !form.peso_real"
-                  class="inline-flex items-center px-4 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700 disabled:opacity-50">
-            Guardar
+                  class="inline-flex items-center px-4 py-2 border border-transparent
+                         text-sm font-medium rounded-md shadow-sm text-white
+                         bg-indigo-600 hover:bg-indigo-700 focus:outline-none 
+                         focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500
+                         disabled:opacity-50 disabled:cursor-not-allowed">
+            <svg v-if="form.processing"
+                 class="animate-spin -ml-1 mr-2 h-4 w-4 text-white"
+                 xmlns="http://www.w3.org/2000/svg"
+                 fill="none"
+                 viewBox="0 0 24 24">
+              <circle class="opacity-25"
+                      cx="12"
+                      cy="12"
+                      r="10"
+                      stroke="currentColor"
+                      stroke-width="4"></circle>
+              <path class="opacity-75"
+                    fill="currentColor"
+                    d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path>
+            </svg>
+            {{ form.processing ? 'Guardando...' : 'Guardar registro' }}
           </button>
         </div>
       </form>

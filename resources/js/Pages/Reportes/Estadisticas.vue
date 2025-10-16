@@ -1,55 +1,95 @@
 <script setup>
-import { ref, onMounted } from 'vue'
+import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout.vue'
 import { Head } from '@inertiajs/vue3'
 import axios from 'axios'
-import { Chart, BarElement, CategoryScale, LinearScale, Tooltip, Legend } from 'chart.js'
+import { ref, onMounted, onBeforeUnmount } from 'vue'
+import { Chart } from 'chart.js/auto'
 
-Chart.register(BarElement, CategoryScale, LinearScale, Tooltip, Legend)
-
+const loading = ref(true)
+const error = ref(null)
 const canvasRef = ref(null)
 let chartInstance = null
 
-onMounted(async () => {
-  const { data } = await axios.get('/api/reportes/estadisticas')
+const load = async () => {
+  loading.value = true
+  error.value = null
+  try {
+    const { data } = await axios.get('/api/reportes/estadisticas')
+    const payload = data?.data ?? { labels: [], datasets: [] }
 
-  const ctx = canvasRef.value.getContext('2d')
-  if (chartInstance) chartInstance.destroy()
+    if (chartInstance) chartInstance.destroy()
 
-  chartInstance = new Chart(ctx, {
-    type: 'bar',
-    data: {
-      labels: data.labels,
-      datasets: [
-        {
-          label: 'Pendientes',
-          data: data.datasets[0].data,
-          backgroundColor: 'rgba(59, 130, 246, 0.6)', // indigo-500
+    chartInstance = new Chart(canvasRef.value.getContext('2d'), {
+      type: 'bar',
+      data: {
+        labels: payload.labels,
+        datasets: [
+          {
+            label: payload.datasets?.[0]?.label ?? 'Pendientes',
+            data: payload.datasets?.[0]?.data ?? [],
+            backgroundColor: 'rgba(59, 130, 246, 0.6)',
+          },
+          {
+            label: payload.datasets?.[1]?.label ?? 'Fabricadas',
+            data: payload.datasets?.[1]?.data ?? [],
+            backgroundColor: 'rgba(16, 185, 129, 0.6)',
+          },
+        ],
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+          legend: { position: 'bottom' },
+          tooltip: { mode: 'index', intersect: false },
+          title: { display: true, text: 'Estado de piezas por proyecto' },
         },
-        {
-          label: 'Fabricadas',
-          data: data.datasets[1].data,
-          backgroundColor: 'rgba(16, 185, 129, 0.6)', // emerald-500
+        scales: {
+          y: { beginAtZero: true, ticks: { precision: 0 } },
+          x: { ticks: { autoSkip: false, maxRotation: 45, minRotation: 0 } },
         },
-      ]
-    },
-    options: {
-      responsive: true,
-      scales: {
-        y: { beginAtZero: true, precision: 0 }
-      }
-    }
-  })
-})
+      },
+    })
+  } catch (e) {
+    console.error(e)
+    error.value = 'No se pudieron cargar las estadísticas.'
+  } finally {
+    loading.value = false
+  }
+}
+
+onMounted(load)
+onBeforeUnmount(() => { if (chartInstance) chartInstance.destroy() })
 </script>
 
 <template>
-  <Head title="Estadísticas" />
-  <div class="min-h-screen bg-gray-50 py-8">
-    <div class="max-w-4xl mx-auto bg-white shadow rounded-lg p-6">
-      <h1 class="text-2xl font-semibold mb-6">Pendientes vs Fabricadas (por proyecto)</h1>
-      <div class="w-full">
-        <canvas ref="canvasRef" height="120"></canvas>
-      </div>
+  <AuthenticatedLayout>
+    <Head title="Estadísticas" />
+
+    <div class="flex items-center justify-between mb-6">
+      <h1 class="text-xl font-semibold">Estadísticas</h1>
+      <button
+        @click="load"
+        :disabled="loading"
+        class="inline-flex items-center px-3 py-2 rounded-md bg-indigo-600 text-white hover:bg-indigo-700 disabled:opacity-50"
+      >
+        <svg v-if="loading" class="animate-spin -ml-1 mr-2 h-4 w-4 text-white" viewBox="0 0 24 24">
+          <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"/>
+          <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z"/>
+        </svg>
+        Recargar
+      </button>
     </div>
-  </div>
+
+    <div v-if="error" class="mb-4 rounded-md border border-red-200 bg-red-50 p-3 text-red-700">
+      {{ error }}
+    </div>
+
+    <div class="relative h-[400px] rounded-lg border bg-white p-4">
+      <div v-if="loading" class="absolute inset-0 grid place-items-center">
+        <div class="h-10 w-10 animate-spin rounded-full border-4 border-gray-200 border-t-indigo-500"></div>
+      </div>
+      <canvas v-show="!loading" ref="canvasRef" />
+    </div>
+  </AuthenticatedLayout>
 </template>
